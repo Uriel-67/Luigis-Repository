@@ -1,0 +1,17 @@
+Acá adentro si quieren podemos ir subiendo todos los orientadores de la materia en formato .ipynb (notebooks de Jupyter). 
+
+Es mas comodo para nosotros ya que con eso entregamos un solo archivo y para la profe es mejor para la correccion.
+
+Para no renegar abriendo servidores raros en el navegador ni complicarse la vida, la recomendación es que instalen la extensión de Jupyter directamente en VS Code:
+
+Van a Extensiones en VS Code (Ctrl + Shift + X).
+
+Buscan "Jupyter" (la de Microsoft) y la instalan.
+
+Abren cualquier orientador (.ipynb) de esta carpeta.
+
+Arriba a la derecha eligen el Kernel (la versión de Python que tengan instalada o su entorno).
+
+Para que quede todo bien, hay que hacer dos tipos de celdas, las celdas markdown sirven para escribir texto, tienen un formato especifico el cual
+podemos pedirle a la ia que lo transcriba en ese formato y queda joya.
+La otra celda, es de python en la cual solo podemos el codigo que se produjo. En caso de tener que hacer dos archivos distintos por ejemplo (main.py y datos.py), simplemente lo separamos con un #.
