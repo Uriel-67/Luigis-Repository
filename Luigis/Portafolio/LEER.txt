@@ -1,3 +1,5 @@
+Lectura para los alumnos unicamente.
+
 Acá adentro si quieren podemos ir subiendo todos los orientadores de la materia en formato .ipynb (notebooks de Jupyter). 
 
 Es mas comodo para nosotros ya que con eso entregamos un solo archivo y para la profe es mejor para la correccion.
