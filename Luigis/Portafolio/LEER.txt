@@ -2,7 +2,7 @@ Acá adentro si quieren podemos ir subiendo todos los orientadores de la materia
 
 Es mas comodo para nosotros ya que con eso entregamos un solo archivo y para la profe es mejor para la correccion.
 
-Para no renegar abriendo servidores raros en el navegador ni complicarse la vida, la recomendación es que instalen la extensión de Jupyter directamente en VS Code:
+La recomendación es que instalen la extensión de Jupyter directamente en VS Code:
 
 Van a Extensiones en VS Code (Ctrl + Shift + X).
 
