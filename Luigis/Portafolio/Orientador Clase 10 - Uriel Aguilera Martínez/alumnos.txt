@@ -1,0 +1,3 @@
+9500;Ana Gomez;4
+12300;Carlos Lopez;2
+15000;Lucia Diaz;4
