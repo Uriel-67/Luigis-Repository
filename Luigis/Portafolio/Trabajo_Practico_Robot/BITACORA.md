@@ -49,7 +49,7 @@ Se relevaron los datos reales del sistema ejecutando las instrucciones básicas 
 | **Git disponible** | Sí (git version 2.55.0.windows.4) |
 | **MuJoCo previamente instalado** | Sí (versión 3.17.0) |
 | **IDE utilizado** | Visual Studio Code |
-| **Observaciones** | El entorno local quedó verificado y aislado fuera de OneDrive en `C:\Luigis\Portafolio\Trabajo_Practico_Robot` |
+| **Observaciones** | None |
 
 #### Evidencia del Entorno Inicial:
 
