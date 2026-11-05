@@ -2,67 +2,78 @@
 #  TP02 - Programacion I
 #  Controlador de misiones con Menu
 #
-#  Nombre y apellido: Uriel Aguilera Martinez - Valentino Segatori - Juan Cruz Ali
-#  Comision:          Miercoles -TM
+#  Integrantes: Uriel Aguilera Martinez - Valentino Segatori - Juan Cruz Ali
+#  Comision:    Miercoles - TM
 # =====================================================================
 
 from robot import ErrorDeSeguridad, Robot
 from misiones import MISIONES
 
-VELOCIDAD_LINEAL_MAXIMA = 0.20   # m/s
-VELOCIDAD_ANGULAR_MAXIMA = 0.50  # rad/s
-TIEMPO_MAXIMO_ORDEN = 10.0       # segundos
+velocidadLinealMaxima = 0.20   # m/s
+velocidadAngularMaxima = 0.50  # rad/s
+tiempoMaximoOrden = 10.0       # segundos
 
 
 # =====================================================================
 #  PARTE 1 - Validar un comando
 # =====================================================================
-def comando_es_valido(comando):
-    """Evalua si la tupla cumple con tipo, estructura y limites."""
+def comandoEsValido(comando):
+    """Evalua si la tupla cumple con tipo, estructura y limites permitidos."""
     esValido = True
 
-    if type(comando) != tuple and type(comando) != list:
-        esValido = False
-    elif len(comando) == 0:
+    if not comando:
         esValido = False
     else:
-        tipo = comando[0]
+        tipoOrden = comando[0]
 
-        if tipo == "detenerse" or tipo == "saludar":
+        if tipoOrden == "detenerse" or tipoOrden == "saludar":
             if len(comando) != 1:
                 esValido = False
 
-        elif tipo == "avanzar":
+        elif tipoOrden == "avanzar":
             if len(comando) != 3:
                 esValido = False
             else:
-                velocidad = comando[1]
-                tiempo = comando[2]
-                esNumeroVel = (type(velocidad) == int or type(velocidad) == float)
-                esNumeroTiempo = (type(tiempo) == int or type(tiempo) == float)
+                velocidadDato = comando[1]
+                tiempoDato = comando[2]
+                esNumero = True
 
-                if not esNumeroVel or not esNumeroTiempo:
+                try:
+                    velocidadValor = float(velocidadDato)
+                    tiempoValor = float(tiempoDato)
+                except (ValueError, TypeError):
+                    esNumero = False
+
+                if not esNumero:
                     esValido = False
-                elif velocidad <= 0 or velocidad > VELOCIDAD_LINEAL_MAXIMA:
+                elif velocidadValor <= 0 or velocidadValor > velocidadLinealMaxima:
                     esValido = False
-                elif tiempo <= 0 or tiempo > TIEMPO_MAXIMO_ORDEN:
+                elif tiempoValor <= 0 or tiempoValor > tiempoMaximoOrden:
                     esValido = False
 
-        elif tipo == "girar":
+        elif tipoOrden == "girar":
             if len(comando) != 3:
                 esValido = False
             else:
-                velocidad = comando[1]
-                tiempo = comando[2]
-                esNumeroVel = (type(velocidad) == int or type(velocidad) == float)
-                esNumeroTiempo = (type(tiempo) == int or type(tiempo) == float)
+                velocidadDato = comando[1]
+                tiempoDato = comando[2]
+                esNumero = True
 
-                if not esNumeroVel or not esNumeroTiempo:
+                try:
+                    velocidadValor = float(velocidadDato)
+                    tiempoValor = float(tiempoDato)
+                except (ValueError, TypeError):
+                    esNumero = False
+
+                if not esNumero:
                     esValido = False
-                elif velocidad == 0 or abs(velocidad) > VELOCIDAD_ANGULAR_MAXIMA:
-                    esValido = False
-                elif tiempo <= 0 or tiempo > TIEMPO_MAXIMO_ORDEN:
-                    esValido = False
+                else:
+                    magnitudGiro = velocidadValor if velocidadValor >= 0 else -velocidadValor
+
+                    if velocidadValor == 0 or magnitudGiro > velocidadAngularMaxima:
+                        esValido = False
+                    elif tiempoValor <= 0 or tiempoValor > tiempoMaximoOrden:
+                        esValido = False
         else:
             esValido = False
 
@@ -72,30 +83,30 @@ def comando_es_valido(comando):
 # =====================================================================
 #  PARTE 2 - Ejecutar un comando
 # =====================================================================
-def ejecutar_comando(robot, comando):
+def ejecutarComando(robot, comando):
     """Ejecuta una orden individual y atrapa excepciones del simulador."""
-    tipo = comando[0]
+    tipoOrden = comando[0]
     resultadoTexto = ""
 
     try:
-        if tipo == "avanzar":
+        if tipoOrden == "avanzar":
             robot.avanzar(velocidad=comando[1], tiempo=comando[2])
             resultadoTexto = f"Avanzo {comando[1]} m/s por {comando[2]} s"
 
-        elif tipo == "girar":
+        elif tipoOrden == "girar":
             robot.girar(velocidad=comando[1], tiempo=comando[2])
             resultadoTexto = f"Giro {comando[1]} rad/s por {comando[2]} s"
 
-        elif tipo == "detenerse":
+        elif tipoOrden == "detenerse":
             robot.detenerse()
             resultadoTexto = "Robot detenido"
 
-        elif tipo == "saludar":
+        elif tipoOrden == "saludar":
             robot.saludar()
             resultadoTexto = "Saludo completado"
 
-    except ErrorDeSeguridad as errSeguridad:
-        resultadoTexto = f"Rechazado por seguridad: {errSeguridad}"
+    except ErrorDeSeguridad as errorSeguridad:
+        resultadoTexto = f"Rechazado por seguridad: {errorSeguridad}"
 
     return resultadoTexto
 
@@ -103,22 +114,23 @@ def ejecutar_comando(robot, comando):
 # =====================================================================
 #  PARTE 3 - Recorrer la mision entera
 # =====================================================================
-def ejecutar_mision(robot, mision, historial):
-    """Recorre la mision registrando estados en una lista homogenea."""
+def ejecutarMision(robot, mision, historial):
+    """Recorre la mision registrando estados en una lista homogenea de strings."""
     print("\n╔═══════════════════════════════════════════════════════════════════╗")
     print(f"║ INICIANDO MISION: {len(mision)} COMANDO(S) RECIBIDO(S)                      ║")
     print("╚═══════════════════════════════════════════════════════════════════╝")
 
-    for i in range(len(mision)):
-        comandoActual = mision[i]
+    for posicion in range(len(mision)):
+        comandoActual = mision[posicion]
 
-        if comando_es_valido(comandoActual):
-            mensaje = ejecutar_comando(robot, comandoActual)
-            if "Rechazado por seguridad" in mensaje:
-                print(f"[RECHAZADO] {comandoActual} -> {mensaje}")
+        if comandoEsValido(comandoActual):
+            mensajeEjecucion = ejecutarComando(robot, comandoActual)
+
+            if len(mensajeEjecucion) >= 23 and mensajeEjecucion[:23] == "Rechazado por seguridad":
+                print(f"[RECHAZADO] {comandoActual} -> {mensajeEjecucion}")
                 historial.append(f"RECHAZADO: {comandoActual[0]} (Seguridad)")
             else:
-                print(f"[OK] {comandoActual} -> {mensaje}")
+                print(f"[OK] {comandoActual} -> {mensajeEjecucion}")
                 historial.append(f"OK: {comandoActual[0]}")
         else:
             print(f"[RECHAZADO] {comandoActual} -> Parametros invalidos")
@@ -132,14 +144,15 @@ def ejecutar_mision(robot, mision, historial):
 # =====================================================================
 #  PARTE 4 - El reporte final
 # =====================================================================
-def generar_reporte(historial):
-    """Muestra el resumen final utilizando caracteres de linea doble."""
+def generarReporte(historial):
+    """Muestra el resumen final analizando el historial con rebanadas."""
     totalEjecutados = 0
     totalRechazados = 0
 
-    for i in range(len(historial)):
-        registro = historial[i]
-        if registro.startswith("OK"):
+    for indice in range(len(historial)):
+        registro = historial[indice]
+        
+        if len(registro) >= 2 and registro[:2] == "OK":
             totalEjecutados += 1
         else:
             totalRechazados += 1
@@ -160,10 +173,10 @@ def generar_reporte(historial):
         print("\n╔═══════════════════════════════════════════════════════════════════╗")
         print("║ DETALLE DE COMANDOS RECHAZADOS                                    ║")
         print("╠═══════════════════════════════════════════════════════════════════╣")
-        for i in range(len(historial)):
-            if not historial[i].startswith("OK"):
-                detalle = historial[i]
-                print(f"║ * {detalle:<63} ║")
+        for indice in range(len(historial)):
+            lineaDetalle = historial[indice]
+            if not (len(lineaDetalle) >= 2 and lineaDetalle[:2] == "OK"):
+                print(f"║ * {lineaDetalle:<63} ║")
         print("╚═══════════════════════════════════════════════════════════════════╝\n")
 
 
@@ -173,7 +186,7 @@ def generar_reporte(historial):
 def mostrarMenu():
     """Imprime el menu utilizando el marco con caracteres especiales."""
     print("╔═══════════════════════════════════════════════════════════════════╗")
-    print("║                  CONTROLADOR DE MISIONES - GO2                    ║")
+    print("║                   CONTROLADOR DE MISIONES - GO2                   ║")
     print("╠═══════════════════════════════════════════════════════════════════╣")
     print("║ 1. Mision Basica                                                  ║")
     print("║ 2. Mision Cuadrado                                                ║")
@@ -192,33 +205,33 @@ def main():
     try:
         while continuarPrograma:
             mostrarMenu()
-            entrada = input("Seleccione una mision (1-5): ").strip()
+            entradaUsuario = input("Seleccione una mision (1-5): ").strip()
 
-            if entrada.isdigit():
-                opcion = int(entrada)
+            if entradaUsuario.isdigit():
+                opcionElegida = int(entradaUsuario)
             else:
-                opcion = 0
+                opcionElegida = 0
 
             misionElegida = None
 
-            if opcion == 1:
+            if opcionElegida == 1:
                 misionElegida = MISIONES["basica"]
-            elif opcion == 2:
+            elif opcionElegida == 2:
                 misionElegida = MISIONES["cuadrado"]
-            elif opcion == 3:
+            elif opcionElegida == 3:
                 misionElegida = MISIONES["errores"]
-            elif opcion == 4:
+            elif opcionElegida == 4:
                 misionElegida = MISIONES["larga"]
-            elif opcion == 5:
+            elif opcionElegida == 5:
                 print("\nCerrando conexion con el simulador...")
                 continuarPrograma = False
             else:
                 print("\nOpcion invalida. Ingrese un numero del 1 al 5.\n")
 
-            if misionElegida != None:
-                historial = []
-                ejecutar_mision(robot, misionElegida, historial)
-                generar_reporte(historial)
+            if misionElegida is not None:
+                historialOperaciones = []
+                ejecutarMision(robot, misionElegida, historialOperaciones)
+                generarReporte(historialOperaciones)
 
     finally:
         robot.detenerse()
