@@ -1,0 +1,5 @@
+{
+    "MAXIMO_DIARIO": 180,
+    "OBJETIVO_SEMANAL": 150,
+    "CATEGORIAS_ADMITIDAS": ["Infantiles", "Cadetes", "Juveniles", "Mayores"]
+}
