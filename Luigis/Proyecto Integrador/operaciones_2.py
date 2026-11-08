@@ -1,127 +1,179 @@
-from validaciones_2 import validar_formato_codigo, existe_atleta_recursivo
-from archivos_2 import guardar_atleta, guardar_registro, exportar_reporte
+from validaciones_2 import (
+    validarFormatoCodigo, validarFormatoFecha,
+    convertirFechaANumero, existeAtletaRecursivo
+)
+from archivos_2 import guardarAtleta, guardarRegistro, exportarReporte
 
-"""FUNCION REGISTRAR ATLETA"""
-def registrar_atleta(atletas, config, codigo, nombre, categoria):
-    if not validar_formato_codigo(codigo):
-        return False, "Formato de codigo invalido. Use una letra mayuscula y dos numeros."
-        
-    lista_codigos = list(atletas.keys())
-    if existe_atleta_recursivo(codigo, lista_codigos):
-        return False, "El atleta ya se encuentra registrado."
-        
-    if not nombre:
+def registrarAtleta(padronAtletas, datosConfiguracion, codigoAtleta, nombreAtleta, categoriaAtleta):
+    """Valida los campos e incorpora un nuevo atleta al padron."""
+    if not validarFormatoCodigo(codigoAtleta):
+        return False, "Formato de codigo invalido. Requiere 1 letra mayuscula y 2 digitos (ej: A01)."
+
+    if codigoAtleta in padronAtletas:
+        return False, "El atleta ya se encuentra registrado con ese codigo."
+
+    if len(nombreAtleta) == 0:
         return False, "El nombre no puede estar vacio."
-        
-    if categoria not in config["CATEGORIAS_ADMITIDAS"]:
-        return False, "Categoria invalida."
-        
-    atletas[codigo] = {"nombre": nombre, "categoria": categoria}
-    guardar_atleta(codigo, nombre, categoria)
-    return True, "Atleta registrado correctamente."
 
-"""FUNCION REGISTRAR MINUTOS"""
-def registrar_minutos(atletas, registros, config, codigo, dia, minutos_texto):
-    lista_codigos = list(atletas.keys())
-    if not existe_atleta_recursivo(codigo, lista_codigos):
-        return False, "No existe el atleta."
-        
+    categoriaValida = ""
+    categoriaIngresadaLimpia = categoriaAtleta.strip().lower()
+
+    for categoriaItem in datosConfiguracion["CATEGORIAS_ADMITIDAS"]:
+        if categoriaItem.lower() == categoriaIngresadaLimpia:
+            categoriaValida = categoriaItem
+
+    if len(categoriaValida) == 0:
+        textoCategorias = ""
+        esPrimerElemento = True
+        for cat in datosConfiguracion["CATEGORIAS_ADMITIDAS"]:
+            if esPrimerElemento:
+                textoCategorias = cat
+                esPrimerElemento = False
+            else:
+                textoCategorias = textoCategorias + ", " + cat
+        return False, "Categoria invalida. Opciones admitidas: " + textoCategorias + "."
+
+    padronAtletas[codigoAtleta] = {"nombre": nombreAtleta, "categoria": categoriaValida}
+    guardarAtleta(codigoAtleta, nombreAtleta, categoriaValida)
+    return True, "Atleta registrado exitosamente."
+
+def registrarMinutos(padronAtletas, historialRegistros, datosConfiguracion, codigoAtleta, fechaEntrenamiento, textoMinutos):
+    """Valida y agrega un registro de entrenamiento con fecha completa y tope diario."""
+    if codigoAtleta not in padronAtletas:
+        return False, "El atleta indicado no existe en el padron registrado."
+
+    if not validarFormatoFecha(fechaEntrenamiento):
+        return False, "Formato de fecha invalido. Debe utilizar DD/MM/AAAA (ej: 05/10/2024)."
+
     try:
-        minutos = float(minutos_texto)
+        minutosEntrenados = float(textoMinutos)
     except ValueError:
-        return False, "Los minutos deben ser numericos."
-        
-    if minutos < 0:
-        return False, "Los minutos no pueden ser negativos."
-        
-    acumulado_diario = 0
-    for r in registros:
-        if r["codigo_atleta"] == codigo and r["dia"] == dia:
-            acumulado_diario += r["minutos"]
-            
-    if acumulado_diario + minutos > config["MAXIMO_DIARIO"]:
-        return False, "Supera el maximo diario permitido."
-        
-    nuevo_registro = {"codigo_atleta": codigo, "dia": dia, "minutos": minutos}
-    registros.append(nuevo_registro)
-    guardar_registro(codigo, dia, minutos)
-    return True, "Entrenamiento registrado correctamente."
+        return False, "Los minutos deben ser un valor numerico."
 
-"""FUNCION REPORTE FILTRADO"""
-def reporte_filtrado(atletas, registros, codigo):
-    lista_codigos = list(atletas.keys())
-    if not existe_atleta_recursivo(codigo, lista_codigos):
-        print("Atleta no encontrado.")
-        return
-        
-    atleta = atletas[codigo]
-    print(f"Ficha de {atleta['nombre']} - {atleta['categoria']}")
-    total = 0
-    for r in registros:
-        if r["codigo_atleta"] == codigo:
-            print(f"Dia: {r['dia']} - Minutos: {r['minutos']}")
-            total += r["minutos"]
-    print(f"Total historico: {total} minutos.")
+    if minutosEntrenados < 0:
+        return False, "Los minutos no pueden ser un valor negativo."
 
-"""FUNCION REPORTE GENERAL"""
-def reporte_general(atletas, registros):
-    if not registros:
-        print("No hay registros historicos.")
-        return
-        
-    totales_categoria = {}
-    total_global = 0
-    
-    for r in registros:
-        codigo = r["codigo_atleta"]
-        if codigo in atletas:
-            cat = atletas[codigo]["categoria"]
-            mins = r["minutos"]
-            totales_categoria[cat] = totales_categoria.get(cat, 0) + mins
-            total_global += mins
-            
-    print(f"Total de minutos historicos globales: {total_global}")
-    for cat, mins in totales_categoria.items():
-        print(f"Categoria {cat}: {mins} minutos.")
+    minutosAcumuladosDiarios = 0
+    for sesion in historialRegistros:
+        if sesion["codigo_atleta"] == codigoAtleta and sesion["fecha"] == fechaEntrenamiento:
+            minutosAcumuladosDiarios += sesion["minutos"]
 
-"""FUNCION REPORTE ALERTAS"""
-def reporte_alertas(atletas, registros, config, semana_evaluar):
-    if not atletas:
-        print("No hay atletas registrados.")
+    if minutosAcumuladosDiarios + minutosEntrenados > datosConfiguracion["MAXIMO_DIARIO"]:
+        minutosDisponibles = datosConfiguracion["MAXIMO_DIARIO"] - minutosAcumuladosDiarios
+        return False, "Supera el maximo diario permitido (" + str(datosConfiguracion["MAXIMO_DIARIO"]) + " min). Minutos disponibles para ese dia: " + str(minutosDisponibles) + "."
+
+    nuevoRegistroSesion = {"codigo_atleta": codigoAtleta, "fecha": fechaEntrenamiento, "minutos": minutosEntrenados}
+    historialRegistros.append(nuevoRegistroSesion)
+    guardarRegistro(codigoAtleta, fechaEntrenamiento, minutosEntrenados)
+    return True, "Entrenamiento registrado exitosamente."
+
+def reporteFiltrado(padronAtletas, historialRegistros, codigoAtleta):
+    """Muestra el historial y la ficha de un atleta especifico localizandolo por clave."""
+    if codigoAtleta not in padronAtletas:
+        print("Atleta no encontrado en el sistema.")
         return
-        
-    acumuladores = {}
-    for codigo in atletas:
-        acumuladores[codigo] = 0
-        
-    for r in registros:
-        if r["dia"].startswith(semana_evaluar):
-            codigo = r["codigo_atleta"]
-            if codigo in acumuladores:
-                acumuladores[codigo] += r["minutos"]
-                
-    salida = f"Atletas que no alcanzaron el objetivo en {semana_evaluar}:\n"
-    hay_alertas = False
-    
-    for codigo, total in acumuladores.items():
-        if total < config["OBJETIVO_SEMANAL"]:
-            nombre = atletas[codigo]["nombre"]
-            salida += f"{codigo} - {nombre} ({total} min)\n"
-            hay_alertas = True
-            
-    if hay_alertas:
-        print(salida)
-        exportar_reporte(salida)
-        print("Reporte exportado a reporte.txt")
+
+    datosAtleta = padronAtletas[codigoAtleta]
+    print()
+    print("Ficha del Atleta:", datosAtleta["nombre"], "| Categoria:", datosAtleta["categoria"])
+    print("══════════════════════════════════════════════════════════════")
+    minutosTotales = 0
+    tieneActividadRegistrada = False
+    for sesion in historialRegistros:
+        if sesion["codigo_atleta"] == codigoAtleta:
+            print("Fecha:", sesion["fecha"], "| Minutos:", sesion["minutos"])
+            minutosTotales += sesion["minutos"]
+            tieneActividadRegistrada = True
+
+    if not tieneActividadRegistrada:
+        print("Sin sesiones de entrenamiento registradas.")
+    print("Total acumulado historico:", minutosTotales, "minutos.")
+
+def reporteGeneral(padronAtletas, historialRegistros):
+    """Calcula totales acumulados por categoria y global."""
+    if len(historialRegistros) == 0:
+        print("No hay registros historicos cargados.")
+        return
+
+    totalesPorCategoria = {}
+    minutosTotalesGlobales = 0
+
+    for sesion in historialRegistros:
+        codigoAtleta = sesion["codigo_atleta"]
+        if codigoAtleta in padronAtletas:
+            nombreCategoria = padronAtletas[codigoAtleta]["categoria"]
+            minutosSesion = sesion["minutos"]
+            totalesPorCategoria[nombreCategoria] = totalesPorCategoria.get(nombreCategoria, 0) + minutosSesion
+            minutosTotalesGlobales += minutosSesion
+
+    print()
+    print("Total historico global acumulado:", minutosTotalesGlobales, "minutos.")
+    print("Desglose por categoria admitida:")
+    for categoriaItem, minutosSubtotal in totalesPorCategoria.items():
+        print(" * Categoria", categoriaItem + ":", minutosSubtotal, "minutos.")
+
+def reporteAlertas(padronAtletas, historialRegistros, datosConfiguracion, fechaInicioTexto, fechaFinTexto):
+    """
+    Detecta atletas que no alcanzaron el objetivo semanal en un lapso de 7 dias,
+    incluyendo explicitamente a los atletas registrados sin actividad (0 minutos).
+    """
+    if len(padronAtletas) == 0:
+        print("No hay atletas registrados en el padron.")
+        return
+
+    if not validarFormatoFecha(fechaInicioTexto) or not validarFormatoFecha(fechaFinTexto):
+        print("Fechas invalidas. Deben tener formato DD/MM/AAAA (ej: 01/10/2024 al 07/10/2024).")
+        return
+
+    numeroInicio = convertirFechaANumero(fechaInicioTexto)
+    numeroFin = convertirFechaANumero(fechaFinTexto)
+
+    if numeroInicio > numeroFin:
+        print("Error de rango: La fecha de inicio debe ser anterior o igual a la fecha de fin.")
+        return
+
+    acumuladoresPeriodo = {}
+    for codigoAtleta in padronAtletas:
+        acumuladoresPeriodo[codigoAtleta] = 0
+
+    for sesion in historialRegistros:
+        if validarFormatoFecha(sesion["fecha"]):
+            fechaSesionNumero = convertirFechaANumero(sesion["fecha"])
+            if numeroInicio <= fechaSesionNumero <= numeroFin:
+                codigoAtleta = sesion["codigo_atleta"]
+                if codigoAtleta in acumuladoresPeriodo:
+                    acumuladoresPeriodo[codigoAtleta] += sesion["minutos"]
+
+    periodoIdentificador = fechaInicioTexto + " al " + fechaFinTexto
+    textoSalida = "Atletas que no alcanzaron el objetivo semanal (" + str(datosConfiguracion["OBJETIVO_SEMANAL"]) + " min) entre " + periodoIdentificador + ":\n"
+    existenAlertas = False
+
+    for codigoAtleta, totalAcumulado in acumuladoresPeriodo.items():
+        if totalAcumulado < datosConfiguracion["OBJETIVO_SEMANAL"]:
+            nombreAtleta = padronAtletas[codigoAtleta]["nombre"]
+            if totalAcumulado == 0:
+                textoSalida += " - " + codigoAtleta + ": " + nombreAtleta + " (Sin actividad registrada: 0 min alcanzados)\n"
+            else:
+                textoSalida += " - " + codigoAtleta + ": " + nombreAtleta + " (" + str(totalAcumulado) + " min alcanzados)\n"
+            existenAlertas = True
+
+    if existenAlertas:
+        print()
+        print(textoSalida.rstrip("\n"))
+        exportarReporte(textoSalida)
+        print("Informe generado y exportado exitosamente a 'reporte.txt'.")
     else:
-        print("Todos alcanzaron el objetivo en ese periodo.")
+        print()
+        print("Felicitaciones: Todos los atletas alcanzaron o superaron el objetivo semanal en el periodo.")
 
-"""FUNCION RESUMEN UNICOS"""
-def resumen_unicos(registros):
-    unicos = set()
-    for r in registros:
-        unicos.add(r["codigo_atleta"])
-        
-    print(f"Cantidad de atletas unicos con actividad: {len(unicos)}")
-    for codigo in unicos:
-        print(codigo)
+def resumenUnicos(historialRegistros):
+    """Muestra cantidad e identificadores unicos mediante conjuntos."""
+    codigosUnicos = set()
+    for sesion in historialRegistros:
+        codigosUnicos.add(sesion["codigo_atleta"])
+
+    print()
+    print("Cantidad total de atletas con actividad registrada:", len(codigosUnicos))
+    print("Identificadores encontrados:")
+    for codigoIdentificador in sorted(list(codigosUnicos)):
+        print(" ->", codigoIdentificador)
