@@ -22,7 +22,7 @@ def validarFormatoUsuario(usuarioIngresado):
 
 def validarFormatoFecha(fechaIngresada):
     """Valida el formato DD/MM/AAAA mediante expresion regular y
-    comprueba la coherencia numerica de dias (1-31) y meses (1-12)."""
+    comprueba la coherencia calendario de dias, meses y anios."""
     try:
         patronFecha = r"^[0-9]{2}/[0-9]{2}/[0-9]{4}$"
         if not re.search(patronFecha, fechaIngresada):
@@ -35,9 +35,14 @@ def validarFormatoFecha(fechaIngresada):
 
         if mesValor < 1 or mesValor > 12:
             return False
-        if diaValor < 1 or diaValor > 31:
-            return False
         if anioValor < 1900 or anioValor > 2100:
+            return False
+
+        diasPorMes = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        if (anioValor % 4 == 0 and anioValor % 100 != 0) or (anioValor % 400 == 0):
+            diasPorMes[1] = 29
+
+        if diaValor < 1 or diaValor > diasPorMes[mesValor - 1]:
             return False
 
         return True

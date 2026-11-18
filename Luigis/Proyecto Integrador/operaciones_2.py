@@ -1,3 +1,4 @@
+import math
 from validaciones_2 import (
     validarFormatoCodigo, validarFormatoFecha,
     convertirFechaANumero, existeAtletaRecursivo
@@ -12,8 +13,15 @@ def registrarAtleta(padronAtletas, datosConfiguracion, codigoAtleta, nombreAtlet
     if codigoAtleta in padronAtletas:
         return False, "El atleta ya se encuentra registrado con ese codigo."
 
-    if len(nombreAtleta) == 0:
+    if not isinstance(nombreAtleta, str):
+        return False, "El nombre debe ser una cadena de texto."
+
+    nombreLimpio = nombreAtleta.strip()
+    if len(nombreLimpio) == 0:
         return False, "El nombre no puede estar vacio."
+
+    if ";" in nombreLimpio or "\n" in nombreLimpio or "\r" in nombreLimpio:
+        return False, "El nombre no puede contener punto y coma (;) ni saltos de linea."
 
     categoriaValida = ""
     categoriaIngresadaLimpia = categoriaAtleta.strip().lower()
@@ -33,8 +41,15 @@ def registrarAtleta(padronAtletas, datosConfiguracion, codigoAtleta, nombreAtlet
                 textoCategorias = textoCategorias + ", " + cat
         return False, "Categoria invalida. Opciones admitidas: " + textoCategorias + "."
 
-    padronAtletas[codigoAtleta] = {"nombre": nombreAtleta, "categoria": categoriaValida}
-    guardarAtleta(codigoAtleta, nombreAtleta, categoriaValida)
+    try:
+        guardadoExitoso = guardarAtleta(codigoAtleta, nombreLimpio, categoriaValida)
+    except OSError:
+        guardadoExitoso = False
+
+    if guardadoExitoso is False:
+        return False, "Error: No se pudo guardar el atleta en el archivo CSV."
+
+    padronAtletas[codigoAtleta] = {"nombre": nombreLimpio, "categoria": categoriaValida}
     return True, "Atleta registrado exitosamente."
 
 def registrarMinutos(padronAtletas, historialRegistros, datosConfiguracion, codigoAtleta, fechaEntrenamiento, textoMinutos):
@@ -47,11 +62,11 @@ def registrarMinutos(padronAtletas, historialRegistros, datosConfiguracion, codi
 
     try:
         minutosEntrenados = float(textoMinutos)
-    except ValueError:
+    except (ValueError, TypeError):
         return False, "Los minutos deben ser un valor numerico."
 
-    if minutosEntrenados < 0:
-        return False, "Los minutos no pueden ser un valor negativo."
+    if math.isnan(minutosEntrenados) or math.isinf(minutosEntrenados) or minutosEntrenados <= 0:
+        return False, "Los minutos deben ser un valor numerico mayor a 0."
 
     minutosAcumuladosDiarios = 0
     for sesion in historialRegistros:
@@ -62,9 +77,16 @@ def registrarMinutos(padronAtletas, historialRegistros, datosConfiguracion, codi
         minutosDisponibles = datosConfiguracion["MAXIMO_DIARIO"] - minutosAcumuladosDiarios
         return False, "Supera el maximo diario permitido (" + str(datosConfiguracion["MAXIMO_DIARIO"]) + " min). Minutos disponibles para ese dia: " + str(minutosDisponibles) + "."
 
+    try:
+        guardadoExitoso = guardarRegistro(codigoAtleta, fechaEntrenamiento, minutosEntrenados)
+    except OSError:
+        guardadoExitoso = False
+
+    if guardadoExitoso is False:
+        return False, "Error: No se pudo guardar el registro en el archivo CSV."
+
     nuevoRegistroSesion = {"codigo_atleta": codigoAtleta, "fecha": fechaEntrenamiento, "minutos": minutosEntrenados}
     historialRegistros.append(nuevoRegistroSesion)
-    guardarRegistro(codigoAtleta, fechaEntrenamiento, minutosEntrenados)
     return True, "Entrenamiento registrado exitosamente."
 
 def reporteFiltrado(padronAtletas, historialRegistros, codigoAtleta):
@@ -160,8 +182,15 @@ def reporteAlertas(padronAtletas, historialRegistros, datosConfiguracion, fechaI
     if existenAlertas:
         print()
         print(textoSalida.rstrip("\n"))
-        exportarReporte(textoSalida)
-        print("Informe generado y exportado exitosamente a 'reporte.txt'.")
+        try:
+            exportadoExitoso = exportarReporte(textoSalida)
+        except OSError:
+            exportadoExitoso = False
+
+        if exportadoExitoso is False:
+            print("Error: No se pudo exportar el informe a 'reporte.txt'.")
+        else:
+            print("Informe generado y exportado exitosamente a 'reporte.txt'.")
     else:
         print()
         print("Felicitaciones: Todos los atletas alcanzaron o superaron el objetivo semanal en el periodo.")

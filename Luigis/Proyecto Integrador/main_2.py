@@ -110,7 +110,7 @@ def main():
             print("Datos requeridos:")
             print(" - Codigo de atleta: Debe existir en el padron registrado.")
             print(" - Fecha: Formato completo DD/MM/AAAA (ej: 05/10/2024).")
-            print(" - Minutos: Mayor o igual a 0 (Maximo diario permitido:", datosConfiguracion["MAXIMO_DIARIO"], "min).")
+            print(" - Minutos: Mayor a 0 (Maximo diario permitido:", datosConfiguracion["MAXIMO_DIARIO"], "min).")
             print()
             codigoAtleta = input("Ingrese Codigo de atleta existente: ").strip()
             fechaEntrenamiento = input("Ingrese Fecha de entrenamiento (DD/MM/AAAA): ").strip()
